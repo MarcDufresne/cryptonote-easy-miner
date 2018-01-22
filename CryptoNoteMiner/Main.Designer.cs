@@ -1,4 +1,4 @@
-﻿namespace CryptoNoteMiner
+﻿namespace M0rkcoinMiner
 {
     partial class Main
     {
@@ -172,7 +172,7 @@
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "Main";
-            this.Text = "CryptoNote Miner";
+            this.Text = "M0rkcoin Miner";
             this.ResumeLayout(false);
             this.PerformLayout();
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CryptoNoteMiner
+namespace M0rkcoinMiner
 {
     public static class INI
     {

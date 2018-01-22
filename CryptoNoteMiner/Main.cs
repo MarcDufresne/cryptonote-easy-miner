@@ -13,8 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CryptoNoteMiner
+
+namespace M0rkcoinMiner
 {
+
     public partial class Main : Form
     {
         bool platform64bit;
@@ -37,7 +39,50 @@ namespace CryptoNoteMiner
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
-        public Main()
+    public static DialogResult InputBox(string title, string promptText, ref string value)
+    {
+        Form form = new Form();
+        Label label = new Label();
+        TextBox textBox = new TextBox();
+        Button buttonOk = new Button();
+        Button buttonCancel = new Button();
+
+        form.Text = title;
+        label.Text = promptText;
+        textBox.Text = value;
+
+        buttonOk.Text = "OK";
+        buttonCancel.Text = "Cancel";
+        buttonOk.DialogResult = DialogResult.OK;
+        buttonCancel.DialogResult = DialogResult.Cancel;
+
+        label.SetBounds(9, 20, 372, 13);
+        textBox.SetBounds(12, 36, 372, 20);
+        buttonOk.SetBounds(228, 72, 75, 23);
+        buttonCancel.SetBounds(309, 72, 75, 23);
+
+        label.AutoSize = true;
+        textBox.Anchor = textBox.Anchor | AnchorStyles.Right;
+        buttonOk.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        buttonCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+        form.ClientSize = new Size(396, 107);
+        form.Controls.AddRange(new Control[] { label, textBox, buttonOk, buttonCancel });
+        form.ClientSize = new Size(Math.Max(300, label.Right + 10), form.ClientSize.Height);
+        form.FormBorderStyle = FormBorderStyle.FixedDialog;
+        form.StartPosition = FormStartPosition.CenterScreen;
+        form.MinimizeBox = false;
+        form.MaximizeBox = false;
+        form.AcceptButton = buttonOk;
+        form.CancelButton = buttonCancel;
+
+        DialogResult dialogResult = form.ShowDialog();
+        value = textBox.Text;
+        return dialogResult;
+    }
+
+
+    public Main()
         {
             InitializeComponent();
 
@@ -53,7 +98,7 @@ namespace CryptoNoteMiner
             simplewalletPath = AppDomain.CurrentDomain.BaseDirectory + @"binaries\simplewallet\" + platformString + @"\simplewallet.exe";
             cpuminerPath = AppDomain.CurrentDomain.BaseDirectory + @"binaries\cpuminer\" + platformString + @"\minerd.exe";
 
-            walletPath = AppDomain.CurrentDomain.BaseDirectory + @"wallet.address.txt";
+            walletPath = AppDomain.CurrentDomain.BaseDirectory + @"wallet.address";
 
             if (!File.Exists(simplewalletPath))
             {
@@ -69,8 +114,25 @@ namespace CryptoNoteMiner
 
             if (!File.Exists(walletPath))
             {
-                MessageBox.Show("Generating new wallet with the password: x");
-                GenerateWallet();
+                DialogResult dialogResult = MessageBox.Show(
+                    "Do you want to generate a new wallet?\n\n" +
+                    "If you already have a wallet and would like to use it, " +
+                    "copy your \".address\" file next to the executable " +
+                    "and relaunch the program.\n" +
+                    "Otherwise, press \"YES\" to generate a wallet and continue.",
+                    "Generate new wallet?",
+                    MessageBoxButtons.YesNo);
+                if(dialogResult == DialogResult.Yes)
+                {
+                    string password = "x";
+                    Main.InputBox("Wallet Password", "New wallet password:", ref password);
+                    GenerateWallet(password);
+                    MessageBox.Show("Generated new wallet with the password: " + password);
+                }
+                else
+                {
+                    Process.GetCurrentProcess().Kill();
+                }
             }
             else
             {
@@ -121,11 +183,11 @@ namespace CryptoNoteMiner
             
         }
 
-        void GenerateWallet()
+        void GenerateWallet(string password)
         {
             var args = new [] { 
                 "--generate-new-wallet=\"" + AppDomain.CurrentDomain.BaseDirectory + "wallet\"", 
-                "--password=x"
+                "--password=" + password
             };
             Console.WriteLine(String.Join(" ", args));
             ProcessStartInfo psi = new ProcessStartInfo(simplewalletPath, String.Join(" ", args))
@@ -149,6 +211,7 @@ namespace CryptoNoteMiner
 
         void startMiningProcesses()
         {
+            ReadWalletAddress();
             var args = new ArrayList(new[] { 
                 "-a cryptonight",
                 "-o stratum+tcp://" + textBoxPoolHost.Text + ':' + textBoxPoolPort.Text,
